@@ -1,0 +1,9 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/ChasLui/anything-understanding/security/advisories/new
+    about: Do not open a public issue for a vulnerability. Use a private advisory.
+  - name: Contributing guide
+    url: https://github.com/ChasLui/anything-understanding/blob/main/CONTRIBUTING.md
+    about: Repo contract, checks, commit convention and PR flow.

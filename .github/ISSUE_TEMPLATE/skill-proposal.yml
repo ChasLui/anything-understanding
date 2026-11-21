@@ -1,0 +1,59 @@
+---
+name: Skill proposal
+description: Propose a new evidence channel or skill before writing it.
+title: "proposal: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A skill is accepted only if it measures something and refuses the rest.
+        Fill in all four fields; "it seemed useful" is not a channel.
+  - type: textarea
+    id: artifact
+    attributes:
+      label: What artifact does this cover?
+      description: The file type or surface a user hands the agent, and the task they want done with it.
+      placeholder: |
+        e.g. Photoshop .psd files, to report layer names, blend modes, hidden layers
+        and exact layer bounds before anyone describes the design.
+    validations:
+      required: true
+  - type: textarea
+    id: channel
+    attributes:
+      label: Which evidence tool measures it?
+      description: >-
+        A real parser or CLI that runs locally and prints numbers. Name the
+        command and the fields it can produce, and say which it cannot.
+      placeholder: |
+        e.g. `psd-tools` (Python) prints layer count, per-layer bbox, blend mode,
+        visibility. It cannot report font substitution or print colours.
+    validations:
+      required: true
+  - type: textarea
+    id: refusal
+    attributes:
+      label: What must it refuse to answer?
+      description: The questions users will ask that the channel cannot ground. These become the refusal rules.
+      placeholder: |
+        e.g. "does this design look good", "is this on brand", "what font is this"
+        when the layer is rasterised.
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample artifact
+      description: A legally shareable sample, or a recipe that generates one, so the self-test can assert measured values.
+      placeholder: A committed fixture under 1 MB, or `scripts/` steps that build one.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before opening
+      options:
+        - label: I read CONTRIBUTING.md and the repo contract.
+          required: true
+        - label: I ran the named tool on the sample artifact and pasted its real output above.
+          required: true

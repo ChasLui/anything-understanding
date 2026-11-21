@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.pyc
+# OCR binaries and fixtures produced by self-tests
+anything-understanding-ocr/
+*.scn
+.ruff_cache/
+.venv/
+*.egg-info/

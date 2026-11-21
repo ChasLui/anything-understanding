@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Opt-in fast pre-commit gate. Enable once per clone:
+#   bash scripts/setup-dev.sh
+# Runs the contract check plus linters on staged files only (no self-tests —
+# those are slow and macOS-only; `bash verify.sh` remains the full gate).
+# Kept bash 3.2-compatible: no mapfile/readarray (stock macOS /bin/bash).
+set -uo pipefail
+
+root=$(git rev-parse --show-toplevel) || exit 1
+cd "$root" || exit 1
+
+staged=()
+while IFS= read -r path; do
+  [ -n "$path" ] && staged+=("$path")
+done < <(git diff --cached --name-only --diff-filter=ACM)
+if [ "${#staged[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+fail=0
+
+if [ -f scripts/check_contract.py ]; then
+  python3 scripts/check_contract.py || fail=1
+fi
+
+sh_files=()
+py_files=()
+md_files=()
+for path in "${staged[@]}"; do
+  case $path in
+    *.sh) sh_files+=("$path") ;;
+    *.py) py_files+=("$path") ;;
+    *.md) md_files+=("$path") ;;
+  esac
+done
+
+if [ "${#sh_files[@]}" -gt 0 ]; then
+  python3 scripts/check_shell_compat.py "${sh_files[@]}" || fail=1
+  if command -v shellcheck >/dev/null; then
+    shellcheck -S warning "${sh_files[@]}" || fail=1
+  fi
+  if command -v shfmt >/dev/null; then
+    shfmt -d -s -i 2 -ci "${sh_files[@]}" || fail=1
+  fi
+fi
+
+if [ "${#py_files[@]}" -gt 0 ] && command -v ruff >/dev/null; then
+  ruff check "${py_files[@]}" || fail=1
+  ruff format --check "${py_files[@]}" || fail=1
+fi
+
+if [ "${#md_files[@]}" -gt 0 ] && command -v markdownlint-cli2 >/dev/null; then
+  markdownlint-cli2 "${md_files[@]}" || fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo "pre-commit: fix the findings above, or bypass once with 'git commit --no-verify'" >&2
+fi
+exit "$fail"

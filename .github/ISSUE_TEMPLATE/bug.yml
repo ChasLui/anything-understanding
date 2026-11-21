@@ -1,0 +1,70 @@
+---
+name: Bug report
+description: A skill's tool or self-test gave a wrong result.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Paste real output, not a summary of it. If the skill answered with a
+        number that is wrong for the artifact, that is the bug — say which
+        number and what you measured with another tool.
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill involved
+      options:
+        - 2d-understanding
+        - 3d-understanding
+        - audio-understanding
+        - code-understanding
+        - data-understanding
+        - doc-understanding
+        - ui-understanding
+        - video-understanding
+        - repo tooling (verify.sh, CI, docs)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Skill version
+      description: From `metadata.version` in the skill's SKILL.md.
+      placeholder: e.g. 1.0.0
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran, run from the skill directory.
+      render: shell
+      placeholder: references/probe.sh meeting.m4a --json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: >-
+        What the tool or self-test should have reported, and what it did report.
+        Include the raw output and how you cross-checked it.
+      placeholder: |
+        expected: integrated_lufs = -16.4 (ffmpeg ebur128)
+        actual:   integrated_lufs = -23.0, and the selftest prints FAIL loudness
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and architecture
+      description: >-
+        Output of `sw_vers -productVersion` and `uname -m`. These scripts are
+        macOS-first; Linux behaviour is usually out of scope.
+      placeholder: e.g. 26.1 arm64
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Self-test output
+      description: Output of `bash skills/<name>/references/selftest.sh`, if it fails.
+      render: shell

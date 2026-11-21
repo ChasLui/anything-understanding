@@ -1,0 +1,98 @@
+---
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint (docs, scripts, frontmatter)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install Python linters
+        run: |
+          python -m pip install --upgrade pip
+          # Pinned to the versions the repo is checked with, so rule drift cannot
+          # turn a green PR red.
+          python -m pip install ruff==0.15.12 pyyaml yamllint==1.38.0
+
+      - name: Install shell linters
+        run: |
+          sudo apt-get update
+          # shfmt is needed by `verify.sh --lint-only`; it is in Ubuntu universe.
+          sudo apt-get install -y shellcheck shfmt
+
+      - name: Install actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+
+      - name: Install markdownlint-cli2
+        # Same version the docs were verified against locally, so a rule change
+        # cannot fail a PR that passed `bash verify.sh` on a laptop.
+        run: npm install -g markdownlint-cli2@0.23.0
+
+      # The self-tests themselves are macOS-first (sips, afinfo, swiftc Vision OCR,
+      # ffmpeg, PyMuPDF), so Linux only runs the static gate here. It checks the
+      # repo contract, shellcheck, shfmt, ruff, bash 3.2 compatibility,
+      # markdownlint, yamllint and actionlint, and skips the self-tests.
+      - name: Lint gate
+        run: bash verify.sh --lint-only
+
+  macos-selftests:
+    name: macOS self-tests (manual)
+    # Full self-tests need the macOS toolchain: sips/afinfo (system), Xcode CLT for
+    # swiftc (Vision OCR), brew ffmpeg, brew whisper-cpp plus a ggml model,
+    # pandoc, and Python packages (PyMuPDF, pdfplumber, python-docx/pptx/openpyxl,
+    # pandas, pyarrow, charset_normalizer, Pillow). That runner is slow and the
+    # heavy dependencies skip themselves when absent, so this job is opt-in.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml pymupdf pdfplumber python-docx python-pptx \
+            openpyxl pandas pyarrow charset_normalizer pillow
+
+      - name: Install media tooling
+        run: |
+          brew install ffmpeg pandoc
+          # whisper-cpp is optional: `transcribe.sh` skips when whisper-cli or a
+          # model is missing. Install it and a model to exercise that path.
+          brew install whisper-cpp || echo "whisper-cpp unavailable, transcript checks will skip"
+
+      - name: Run every self-test
+        run: bash verify.sh

@@ -1,0 +1,13 @@
+---
+extends: default
+
+# Workflows stay checked: actionlint validates GitHub Actions semantics, yamllint
+# validates YAML itself (indentation, quoting, duplicate keys), so they do not
+# overlap enough to skip one. `truthy` must not police keys, because GitHub's
+# `on:` trigger key is not a boolean and yamllint would flag every workflow.
+rules:
+  line-length:
+    max: 140
+    level: warning
+  truthy:
+    check-keys: false

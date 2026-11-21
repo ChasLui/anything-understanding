@@ -1,0 +1,14 @@
+# Tooling config only: this repo ships skill scripts, not an installable package.
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# These report/SVG builders format long multi-line templates with named % mappings;
+# rewriting them as f-strings would be harder to read for no behavioural gain.
+"skills/3d-understanding/references/glb-inspect.py" = ["UP031"]
+"skills/3d-understanding/references/step-views.py" = ["UP031"]

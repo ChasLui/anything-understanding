@@ -1,0 +1,9 @@
+{
+  // Markdown here is mostly Chinese: CJK has no spaces, so MD013's 80-column rule
+  // cannot be met without arbitrary wrapping. MD060 (table pipe spacing) is a
+  // style rule the tables intentionally use the compact form for.
+  "config": {
+    "MD013": false,
+    "MD060": false
+  }
+}
