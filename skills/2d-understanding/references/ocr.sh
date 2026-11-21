@@ -63,7 +63,7 @@ if ! mkdir -p "$cache" 2>/dev/null || [ ! -O "$cache" ]; then
   cache=$(mktemp -d "${TMPDIR:-/tmp}/ocr-cache.XXXXXX")
   cache_tmp=$cache
 fi
-chmod 700 "$cache" 2>/dev/null || true
+[ -n "${OCR_CACHE_DIR:-}" ] || chmod 700 "$cache" 2>/dev/null || true
 bin="$cache/ocr-$(shasum -a 256 "$here/ocr.swift" | cut -c1-12)"
 if [ -L "$bin" ] || { [ -e "$bin" ] && [ ! -O "$bin" ]; }; then
   echo "ocr: refusing cache binary not owned by you: $bin" >&2

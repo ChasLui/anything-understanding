@@ -18,8 +18,9 @@ download_hint() {
   cat >&2 <<'HINT'
 Download a real model (74 MB tiny, 142 MB base):
   mkdir -p ~/.cache/whisper.cpp
-  curl -L -o ~/.cache/whisper.cpp/ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-  curl -L -o ~/.cache/whisper.cpp/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+  curl --fail --proto '=https' --tlsv1.2 -L -o ~/.cache/whisper.cpp/ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+  curl --fail --proto '=https' --tlsv1.2 -L -o ~/.cache/whisper.cpp/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+  # Verify the checksum published upstream before trusting a downloaded model.
 Or point at an existing one: --model /path/to/ggml-small.bin (or WHISPER_MODEL=...).
 HINT
 }
