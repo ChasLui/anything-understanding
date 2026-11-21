@@ -29,7 +29,10 @@ jobs:
         with:
           args: >-
             --no-progress --max-retries 2 --accept 200,206,429
-            --exclude 'https://github.com/ChasLui/anything-understanding/security/advisories/new'
+            --exclude 'localhost'
+            --exclude 'api\.vikingdb\.cn-beijing\.volces\.com'
+            --exclude 'xie\.infoq\.cn'
+            --exclude 'github\.com/ChasLui/anything-understanding/actions/workflows/verify\.yml'
             './**/*.md'
           fail: true
         env:
