@@ -92,8 +92,9 @@ for target in "${targets[@]}"; do
     for kind in $(kinds_for "$lang"); do
       ast-grep run --kind "$kind" --lang "$lang" --json=stream "$f" 2>/dev/null |
         jq -r --arg kind "$kind" --arg f "$f" \
-          '(.lines | split("\n")[0] | gsub("^\\s+|\\s+$"; "") | .[0:100]) as $first |
-           "\($f)\t\(.range.start.line + 1)\t\($kind)\t\($first)"' \
+          'def clean: gsub("\t"; " ") | gsub("[[:cntrl:]]"; "?");
+           (.lines | split("\n")[0] | gsub("^\\s+|\\s+$"; "") | .[0:100] | clean) as $first |
+           "\($f | clean)\t\(.range.start.line + 1)\t\($kind)\t\($first)"' \
           >>"$tmp/out.tsv" || true
     done
   done <<<"$files"
@@ -115,9 +116,9 @@ if [ "$as_json" = 1 ]; then
   exit 0
 fi
 
-cut -f1-4 "$tmp/out.tsv"
+cut -f1-4 "$tmp/out.tsv" | LC_ALL=C tr '\033' '?'
 if [ "$skipped_count" -gt 0 ]; then
   echo "--- skipped ${skipped_count} files (no bundled parser; use grep or an LSP):" >&2
-  printf '%s\n' "$skipped_unique" | head -10 | sed 's/^/    /' >&2
+  printf '%s\n' "$skipped_unique" | head -10 | LC_ALL=C tr -d '\000-\010\013-\037\177' | sed 's/^/    /' >&2
 fi
 echo "--- ${symbol_count} definitions" >&2

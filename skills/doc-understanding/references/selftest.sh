@@ -196,7 +196,7 @@ check "render reports size" "$(awk -F'\t' '$2=="1667x834"{print "ok"}' <<<"$line
 check "render file exists" "$([ -s "$work/p1.png" ] && echo yes || echo no)" "yes"
 sibling=$(cd "$here/../../2d-understanding/references" 2>/dev/null && pwd || true)
 cached=""
-for candidate in "${OCR_CACHE_DIR:-${TMPDIR:-/tmp}/anything-understanding-ocr}"/ocr-*; do
+for candidate in "${OCR_CACHE_DIR:-$HOME/Library/Caches/anything-understanding-ocr}"/ocr-*; do
   [ -x "$candidate" ] && {
     cached=$candidate
     break
@@ -250,6 +250,28 @@ python3 "$here/extract.py" "$work/text.pdf" --pages 99 >/dev/null 2>&1
 rc_pages=$?
 set -e
 check "empty page selection errors" "$rc_pages" "1"
+
+# --- far-cell xlsx must be bounded; render default must not land in CWD ---
+python3 - "$work/far.xlsx" <<'PY'
+import sys
+from openpyxl import Workbook
+
+wb = Workbook()
+ws = wb.active
+ws["A1"] = "x"
+ws["A1000000"] = "far"
+wb.save(sys.argv[1])
+PY
+out=$(python3 "$here/extract.py" "$work/far.xlsx")
+check "far cell truncated" "$(grep -c '(truncated)' <<<"$out")" "1"
+check "far cell bounded lines" "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" "2"
+
+start=$PWD
+cd "$work" || exit 1
+line=$(bash "$here/render.sh" "$work/scan.pdf" --page 1)
+check "render default not in cwd" "$(find . -maxdepth 1 -name 'page-*.png' | wc -l | tr -d ' ')" "0"
+check "render default path exists" "$([ -s "$(cut -f1 <<<"$line")" ] && echo yes || echo no)" "yes"
+cd "$start" || exit 1
 
 [ "$fail" = 0 ] && echo "selftest passed" || {
   echo "selftest FAILED" >&2

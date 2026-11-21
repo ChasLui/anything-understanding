@@ -196,6 +196,13 @@ def category_label(raw):
     return raw
 
 
+home = os.path.expanduser("~")
+
+
+def display_path(value):
+    return "~" + value[len(home):] if value == home or value.startswith(home + os.sep) else value
+
+
 rows = []
 for line in read("rows").splitlines():
     if "\x1f" not in line:
@@ -215,7 +222,7 @@ for line in read("rows").splitlines():
             "version": version or None,
             "category": category or None,
             "category_label": category_label(category),
-            "path": path,
+            "path": display_path(path),
         }
     )
 

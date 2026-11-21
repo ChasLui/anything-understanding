@@ -110,6 +110,26 @@ check "hostile name has no control chars" \
 check "hostile executable not resolved outside bundle" \
   "$(jqpy 'd["binary"]["path"] is None and d["architectures"] == []' <<<"$out")" "True"
 
+# lipo errors echo the executable path; that path must not reach the terminal raw.
+mkdir -p "$work/Esc.app/Contents/MacOS"
+python3 - "$work/Esc.app" <<'PY'
+import os
+import plistlib
+import sys
+
+app = sys.argv[1]
+name = "bin\x1b[31mansi\x1b[0m"
+plistlib.dump(
+    {"CFBundleIdentifier": "dev.test.esc", "CFBundleExecutable": name},
+    open(os.path.join(app, "Contents", "Info.plist"), "wb"),
+    fmt=plistlib.FMT_BINARY,
+)
+open(os.path.join(app, "Contents", "MacOS", name), "wb").write(b"x")
+PY
+out=$(bash "$here/appinfo.sh" "$work/Esc.app" --json)
+check "lipo note has no control chars" \
+  "$(jqpy 'not any(ord(c) < 32 for n in d["notes"] for c in n)' <<<"$out")" "True"
+
 # symlink bundle: size must not be measured through the link
 mkdir -p "$work/tree" && printf 'x' >"$work/tree/f"
 ln -s tree "$work/Sym.app"

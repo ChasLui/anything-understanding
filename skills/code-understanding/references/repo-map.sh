@@ -140,17 +140,18 @@ PY
   exit 0
 fi
 
-echo "root: $root"
+clean() { LC_ALL=C sed 's/[[:cntrl:]]/?/g'; }
+echo "root: $root" | clean
 echo "git: $git_line"
 echo "files: $file_count"
 echo "weights (lines/files): $(awk -F'\t' '{printf "%s(%d/%d) ", $3, $1, $2}' "$tmp/ext")"
-echo "entry points: ${entries:-none found}"
+echo "entry points: ${entries:-none found}" | clean
 echo "manifests: ${manifests:-none}"
 echo "tests: ${test_files} files"
 echo "skip: ${generated} generated/lock files, vendored: ${vendored:-none}"
 echo "largest files:"
-awk -F'\t' '{printf "  %6d  %s\n", $1, $2}' "$tmp/largest"
+awk -F'\t' '{printf "  %6d  %s\n", $1, $2}' "$tmp/largest" | clean
 if [ -n "$churn_file" ] && [ -s "$churn_file" ]; then
   echo "hotspots (last $churn_window commits):"
-  awk -F'\t' '{printf "  %3d  %s\n", $1, $2}' "$churn_file"
+  awk -F'\t' '{printf "  %3d  %s\n", $1, $2}' "$churn_file" | clean
 fi

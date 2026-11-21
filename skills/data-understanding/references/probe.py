@@ -110,7 +110,7 @@ def preamble_lines(path: Path, encoding: str) -> int:
 
 
 def profile_csv(path: Path, kind: str) -> dict:
-    raw_head = path.read_bytes()[:262_144]
+    raw_head = path.open("rb").read(262_144)
     encoding = detect_encoding(raw_head) or "utf-8"
     preamble = preamble_lines(path, encoding)
     notes: list[str] = []
@@ -323,7 +323,7 @@ JSON_INLINE_LIMIT = 256 * 1024 * 1024
 
 def profile_json_path(path: Path, notes: list[str]) -> dict:
     """Stream JSONL line by line; only arrays and pretty-printed objects are read whole."""
-    head = path.read_bytes()[:4096].lstrip(b"\xef\xbb\xbf").lstrip()
+    head = path.open("rb").read(4096).lstrip(b"\xef\xbb\xbf").lstrip()
     if head.startswith(b"["):
         if path.stat().st_size > JSON_INLINE_LIMIT:
             notes.append("large JSON array: not parsed (over 256 MB)")

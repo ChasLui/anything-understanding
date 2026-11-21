@@ -8,10 +8,16 @@ specific:
 
 - Scripts read files the user points them at (images, media, PDFs, spreadsheets,
   SQLite databases, repositories) and print measurements.
-- **No script sends data anywhere.** There is no network code, no upload, no
-  telemetry, no analytics, and no auto-update path. The only URL in the repo is
-  a *printed* download hint in `audio-understanding/references/transcribe.sh`;
-  the script never runs it, it tells you how to fetch a whisper model yourself.
+- **Scripts in this repo make no network calls.** There is no telemetry, no
+  analytics, and no auto-update path. The only URL in a script is a *printed*
+  download hint in `audio-understanding/references/transcribe.sh`; it never runs
+  it, it tells you how to fetch a whisper model yourself.
+- The `3d-understanding` skill *documents* a hosted OpenViking backend
+  (`ov add-resource`, `ov find --image`). No script here invokes it; when a user
+  or agent runs those commands, the artifact is uploaded to the endpoint in
+  `ov config`. CAD models, BOMs, quotes and supplier records are confidential by
+  default: require explicit user consent and state the destination before any
+  upload, or stay on the local `step-views.sh` / GLB path.
 - SQLite access is read-only (`mode=ro`); the data tools never write to the
   database they inspect.
 - Self-tests build throwaway fixtures in a temporary directory and delete them.

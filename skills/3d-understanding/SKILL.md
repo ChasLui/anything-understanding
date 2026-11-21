@@ -40,6 +40,14 @@ metadata:
 - 格式：`.STEP` 官方确认；`.DWG` 未验证；`dxf/iges/sldprt/sldasm` 为 roadmap。
 - 无后端时走 `references/step-views.sh`（见下）。
 
+#### 数据边界（上传前必须确认）
+
+- `ov add-resource`、`ov find --image` 会把 STEP/截图**上传**到 `ov config` 里
+  配置的后端。CAD、BOM、报价、供应商记录默认按机密处理：先说明去向并取得
+  用户明确同意，再上传；未同意就走本地 `step-views.sh` / GLB 解析。
+- 只上传回答所需的最小文件；不要把整个 `quotes/`、`suppliers/` 目录批量入库。
+- 报告里写清数据落在哪个 endpoint；换服务器（`ov config`）等同于换数据去向。
+
 #### Gate（CAD）
 
 ```bash

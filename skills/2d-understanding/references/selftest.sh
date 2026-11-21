@@ -74,9 +74,21 @@ check "svg text" "$(jqpy 'd["text"]' <<<"$out")" "Hello"
 check "svg font" "$(jqpy 'd["fonts"]' <<<"$out")" "['Inter, sans-serif']"
 check "svg external ref" "$(jqpy 'len(d["external_refs"])' <<<"$out")" "1"
 if command -v rsvg-convert >/dev/null; then
-  check "svg renders" "$(jqpy 'd["render"]["ok"]' <<<"$out")" "True"
+  check "external refs skip render" \
+    "$(jqpy 'd["render"] is None and any("render skipped" in i for i in d["issues"])' <<<"$out")" "True"
+  cat >"$work/c.svg" <<'EOF'
+<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red"/></svg>
+EOF
+  out=$(python3 "$here/svg-inspect.py" "$work/c.svg" --json)
+  check "self-contained svg renders" "$(jqpy 'd["render"]["ok"]' <<<"$out")" "True"
   out=$(python3 "$here/svg-inspect.py" "$work/b.svg" --json)
   check "dimensionless svg fails render" "$(jqpy 'd["render"]["ok"]' <<<"$out")" "False"
+  cat >"$work/d.svg" <<'EOF'
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10"><image xlink:href="file:///etc/hosts" width="10" height="10"/></svg>
+EOF
+  out=$(python3 "$here/svg-inspect.py" "$work/d.svg" --json)
+  check "file:// ref counted" "$(jqpy 'len(d["external_refs"])' <<<"$out")" "1"
+  check "file:// ref skips render" "$(jqpy 'd["render"] is None' <<<"$out")" "True"
 fi
 
 # --- pixel diff ---
@@ -107,7 +119,7 @@ fi
 # --- OCR (macOS Vision; compile is cached by source hash) ---
 # `ls | head` under pipefail exits 1 when the cache is empty; probe without a pipe.
 cached=""
-for candidate in "${OCR_CACHE_DIR:-${TMPDIR:-/tmp}/anything-understanding-ocr}"/ocr-*; do
+for candidate in "${OCR_CACHE_DIR:-$HOME/Library/Caches/anything-understanding-ocr}"/ocr-*; do
   [ -x "$candidate" ] && {
     cached=$candidate
     break
@@ -138,6 +150,15 @@ PY
   out=$(bash "$here/ocr.sh" "$work/wide.png" --json 2>/dev/null)
   check "oversized image downscaled, text still found" \
     "$(jqpy '"Wide image OCR" in d["lines"][0]["text"]' <<<"$out")" "True"
+  cache=$(mktemp -d)
+  hash=$(shasum -a 256 "$here/ocr.swift" | cut -c1-12)
+  ln -s /bin/echo "$cache/ocr-$hash"
+  set +e
+  OCR_CACHE_DIR="$cache" bash "$here/ocr.sh" "$work/text.png" >/dev/null 2>&1
+  rc_ocr=$?
+  set -e
+  rm -r "$cache"
+  check "ocr cache symlink refused" "$rc_ocr" "2"
 else
   echo "skip OCR (needs macOS swiftc and a cached build; run OCR_TEST=1 to compile)"
 fi
