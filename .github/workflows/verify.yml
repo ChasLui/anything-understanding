@@ -58,7 +58,9 @@ jobs:
       # The self-tests themselves are macOS-first (sips, afinfo, swiftc Vision OCR,
       # ffmpeg, PyMuPDF), so Linux only runs the static gate here. It checks the
       # repo contract, shellcheck, shfmt, ruff, bash 3.2 compatibility,
-      # markdownlint, yamllint and actionlint, and skips the self-tests.
+      # markdownlint, yamllint and actionlint, skips the self-tests, and skips the
+      # Swift typecheck because AppKit/Vision are macOS-only. The macOS job below
+      # covers the full gate when dispatched.
       - name: Lint gate
         run: bash verify.sh --lint-only
 

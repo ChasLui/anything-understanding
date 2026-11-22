@@ -125,7 +125,9 @@ else
 fi
 
 swift_src=skills/2d-understanding/references/ocr.swift
-if command -v swiftc >/dev/null; then
+if [ "$(uname -s)" != Darwin ]; then
+  mark swift-typecheck "SKIP (AppKit/Vision are macOS-only)"
+elif command -v swiftc >/dev/null; then
   run_check swift-typecheck swiftc -typecheck "$swift_src"
 else
   mark swift-typecheck "SKIP (not installed)"
