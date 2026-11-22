@@ -30,16 +30,21 @@ fail=0
 ran=0
 mark() { printf '  %-20s %s\n' "$1" "$2"; }
 run_check() { # run_check <label> <command...>
-  local label=$1
+  local label=$1 out
   shift
-  if "$@" >/tmp/verify-check.$$ 2>&1; then
+  out=$(mktemp "${TMPDIR:-/tmp}/verify-check.XXXXXX") || {
+    mark "$label" FAIL
+    fail=1
+    return
+  }
+  if "$@" >"$out" 2>&1; then
     mark "$label" PASS
   else
     mark "$label" FAIL
-    sed 's/^/    /' /tmp/verify-check.$$ | tail -20
+    sed 's/^/    /' "$out" | tail -20
     fail=1
   fi
-  rm -f /tmp/verify-check.$$
+  rm -f "$out"
 }
 
 # Existing shell and markdown files, so absent optional dirs never break a glob.

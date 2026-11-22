@@ -123,7 +123,7 @@ err=$(WHISPER_MODEL="$work/nonexistent/ggml-x.bin" bash "$here/transcribe.sh" "$
 rc=$?
 set -e
 check "missing model exit" "$rc" "2"
-check "missing model names curl" "$(grep -c 'curl -L -o' <<<"$err")" "2"
+check "missing model names curl" "$(grep -c 'curl --fail' <<<"$err")" "2"
 check "missing model names a real file" "$(grep -c 'ggml-base.bin' <<<"$err" >/dev/null && echo yes)" "yes"
 
 tests_model=/opt/homebrew/share/whisper-cpp/for-tests-ggml-tiny.bin

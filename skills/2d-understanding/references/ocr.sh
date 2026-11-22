@@ -5,7 +5,7 @@
 #   ocr.sh shot.png --lang zh-Hans,en-US --json
 #
 # Vision can return zero lines without any error. Measured 2026-11-21 (macOS 26,
-# 7680x3240 Retina screenshot, dark UI): whole image 0 lines; the same pixels
+# high-DPI Retina screenshot, dark UI): whole image 0 lines; the same pixels
 # cropped to 3700x1562 -> 57 lines; the same image *resampled* to 3700x1562 ->
 # 0 lines (LANCZOS and NEAREST); 3840x900 region crops -> 19..37 lines. So this
 # is not a clean edge/area limit and resampling itself can erase whole regions.
@@ -27,7 +27,11 @@ shift
 max_edge=${OCR_MAX_EDGE:-3200}
 
 tmp=""
-cleanup() { [ -z "$tmp" ] || rm -f "$tmp"; }
+cache_tmp=""
+cleanup() {
+  [ -z "$tmp" ] || rm -f "$tmp"
+  [ -z "$cache_tmp" ] || rm -r "$cache_tmp"
+}
 trap cleanup EXIT
 read -r width height <<<"$(sips -g pixelWidth -g pixelHeight "$image" 2>/dev/null |
   awk '/pixelWidth/{w=$2} /pixelHeight/{h=$2} END{print w" "h}')"
@@ -45,9 +49,26 @@ if [ -n "${width:-}" ] && [ -n "${height:-}" ]; then
   fi
 fi
 
-cache=${OCR_CACHE_DIR:-${TMPDIR:-/tmp}/anything-understanding-ocr}
-mkdir -p "$cache"
+# Cache the compiled binary per user. A world-writable directory lets another
+# local user pre-create the content-addressed name and get executed by us.
+if [ -n "${OCR_CACHE_DIR:-}" ]; then
+  cache=$OCR_CACHE_DIR
+elif [ "$(uname -s)" = Darwin ]; then
+  cache="${HOME}/Library/Caches/anything-understanding-ocr"
+else
+  cache="${XDG_CACHE_HOME:-$HOME/.cache}/anything-understanding-ocr"
+fi
+if ! mkdir -p "$cache" 2>/dev/null || [ ! -O "$cache" ]; then
+  echo "ocr: cache not owned by you: $cache; using a private temp dir" >&2
+  cache=$(mktemp -d "${TMPDIR:-/tmp}/ocr-cache.XXXXXX")
+  cache_tmp=$cache
+fi
+[ -n "${OCR_CACHE_DIR:-}" ] || chmod 700 "$cache" 2>/dev/null || true
 bin="$cache/ocr-$(shasum -a 256 "$here/ocr.swift" | cut -c1-12)"
+if [ -L "$bin" ] || { [ -e "$bin" ] && [ ! -O "$bin" ]; }; then
+  echo "ocr: refusing cache binary not owned by you: $bin" >&2
+  exit 2
+fi
 if [ ! -x "$bin" ] || [ "$here/ocr.swift" -nt "$bin" ]; then
   swiftc -O "$here/ocr.swift" -o "$bin" >/dev/null
 fi

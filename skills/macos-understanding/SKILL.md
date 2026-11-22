@@ -53,14 +53,14 @@ references/sysfacts.sh            # 人类可读
 references/sysfacts.sh --json     # 机器可读，测不到的字段是 null
 ```
 
-实测（本机，macOS 27.2.1）：
+输出形状（数值因机器而异，不要把示例当成本机事实）：
 
 ```text
-os: macOS 27.2.1 (26B131)
-kernel: 27.2.0  arch: arm64  model: MacBookPro18,4
-chip: Apple M1 Max  cores: 10  memory: 64 GiB
-disk: 1.8 TiB total, 808 GiB free on /
-power: AC Power, battery 80%
+os: macOS <version> (<build>)
+kernel: <kernel>  arch: arm64  model: <model-id>
+chip: <chip>  cores: <n>  memory: <n> GiB
+disk: <total> total, <free> free on /
+power: <source>, battery <pct>%
 sip: enabled  filevault: On
 ```
 
@@ -125,10 +125,10 @@ references/apps.sh --filter summer     # 名字或 bundle id 子串
 references/apps.sh --json              # 数组
 ```
 
-实测（本机）：`/Applications` 67、`~/Applications` 3、`/System/Applications` 47、
-`/System/Applications/Utilities` 18 —— 共 135 个 `.app` 条目，其中 1 个是 952 B 的
-macOS alias 文件（`/Applications/豆包浏览器.app`，不是 bundle），可读 bundle 134 个。
-脚本只统计真实 bundle，跳过的条目写 stderr；`--count` 与 `--json` 的长度一致。
+示例（计数因机器而异）：标准应用目录里有若干 `.app` 条目；其中可能混有
+macOS alias 文件（不是 bundle）或符号链接。脚本只统计真实 bundle，
+跳过的条目写 stderr；`--count` 与 `--json` 的长度一致。`--json` 里的
+`~/Applications/...` 会把账户名折叠成 `~`，可以直接引用。
 逐 App 只读 Info.plist，**不**对每个 App 跑 `codesign`（太慢）。
 目录之外的 App（Setapp、自定义 cask 路径、`/opt/homebrew/Caskroom` 里的原始包）
 不在清单里——报告写"扫描了哪些目录"，别把"清单里没有"说成"没装"。
@@ -154,7 +154,7 @@ macOS alias 文件（`/Applications/豆包浏览器.app`，不是 bundle），�
 
 ## Grounding 规则
 
-- 规格带单位与来源：`64 GiB（hw.memsize）`、`808 GiB 可用（df -k /）`。
+- 规格带单位与来源：`<n> GiB（hw.memsize）`、`<n> GiB 可用（df -k /）`；数值因机器而异。
 - 签名/门禁只报命令输出：`accepted, source=Notarized Developer ID`，不转述成"安全"。
 - `spctl accepted` 不等于"已公证"——看 `source=` 行；`codesign` 有 Authority 不等于
   bundle 完整。
@@ -162,6 +162,8 @@ macOS alias 文件（`/Applications/豆包浏览器.app`，不是 bundle），�
 - 装了什么（磁盘）与在跑什么（GUI 会话）是两件事，结论分开写。
 - 不读用户内容：不碰 Messages/Mail/浏览器数据、不 `defaults read` 个人域、
   不看 TCC 保护目录；被拒绝就报"无权限"，不绕过。
+- `sysfacts.sh` 不输出序列号、硬件 UUID 或主机名，只报机型/芯片/内存/磁盘/电源/
+  SIP/FileVault；`apps.sh` 的安装清单是本机数据，贴进公开 issue 前先裁剪。
 
 ## 失败模式
 

@@ -70,6 +70,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Self-tests now cover hostile bundles, symlinks, quarantine, broken bundles and
   exit codes.
 
+### Security
+
+- SVG inspection no longer renders documents with external `href`/`url()` refs:
+  librsvg embedded a local PNG in the output bitmap, so the renderer could read
+  arbitrary local images. Refs are still reported, rendering is skipped.
+- OCR cache is per-user (`~/Library/Caches`, mode 0700) and refuses symlinked or
+  non-owned binaries; a predictable `/tmp` cache name could be hijacked.
+- `macos-understanding` scrubs `lipo` output (the last unsanitized terminal-escape
+  path), rejects `..` in `CFBundleExecutable`, and collapses `$HOME` to `~` in
+  JSON paths so the account name is not published.
+- XLSX extraction caps rows/columns in read-only mode (a 4.8 KB far-cell workbook
+  could allocate millions of cells); JSON/CSV probes read only the prefix they use.
+- `render.sh` writes rendered scan pages to a private temp dir, not the CWD;
+  `verify.sh` uses `mktemp` instead of a predictable `/tmp` name.
+- `3d-understanding` documents a consent gate for the hosted backend upload, and
+  `SECURITY.md` scopes the "no network" claim to the repo's scripts.
+- Issue/PR templates and CONTRIBUTING require redacting paths, headers, OCR text
+  and transcripts; macOS sample output no longer carries a device fingerprint.
+- CI actions are pinned to commit SHAs (lychee is third-party); scheduled link
+  checks skip documented example URLs and geo-blocked articles.
+
 ### Notes
 
 - Self-tests are **macOS-first**: `sips`, `afinfo`, `swiftc` (Vision OCR),

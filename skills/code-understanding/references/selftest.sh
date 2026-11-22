@@ -119,6 +119,32 @@ out=$(bash "$here/symbols.sh" "$work/badutf8" --json)
 check "invalid UTF-8 listed as skipped" \
   "$(jqpy 'any(p.endswith("bad.py") for p in d["skipped_files"])' <<<"$out")" "True"
 
+# --- hostile filename: ESC/tab must not reach the terminal or break TSV ---
+mkdir -p "$work/hostile"
+python3 - "$work/hostile" <<'PY'
+import os, sys
+
+name = "evil\x1b[31mred\x1b[0m\tname.py"
+with open(os.path.join(sys.argv[1], name), "w", encoding="utf-8") as fh:
+    fh.write("def f():\n    pass\n")
+PY
+out=$(bash "$here/symbols.sh" "$work/hostile" 2>/dev/null)
+check "control chars replaced in output" \
+  "$(printf '%s' "$out" | LC_ALL=C grep -c $'\033' || true)" "0"
+check "hostile filename keeps 4 TSV columns" \
+  "$(printf '%s\n' "$out" | awk -F'\t' 'NR==1{print NF}')" "4"
+
+# repo-map human output must not replay control bytes from the filesystem fallback.
+mkdir -p "$work/plainesc"
+python3 - "$work/plainesc" <<'PY'
+import os, sys
+
+open(os.path.join(sys.argv[1], "evil\x1b[31mred\x1b[0m.rs"), "w").write("fn f() {}\n")
+PY
+out=$(bash "$here/repo-map.sh" "$work/plainesc")
+check "repo-map strips control chars" \
+  "$(printf '%s' "$out" | LC_ALL=C grep -c $'\033' || true)" "0"
+
 [ "$fail" = 0 ] && echo "selftest passed" || {
   echo "selftest FAILED" >&2
   exit 1

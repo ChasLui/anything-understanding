@@ -10,6 +10,9 @@ Why:
 
 <!-- Paste the commands you ran and their real output. Numbers, not adjectives. -->
 
+<!-- Redact absolute paths and private content (CSV headers, OCR text, transcripts)
+     before pasting output; replace them with <artifact> / <redacted>. -->
+
 ```text
 bash skills/SKILL/references/selftest.sh
 bash verify.sh
@@ -20,6 +23,8 @@ bash verify.sh
 - [ ] The self-test for the touched skill was run and passes
       (the touched skill's `references/selftest.sh`).
 - [ ] `bash verify.sh` is green (or every `SKIP` is explained in this PR).
+- [ ] Evidence is redacted: no `/Users/<you>/…` paths, private CSV headers, OCR
+      text or transcripts pasted into this public PR.
 - [ ] No machine-specific absolute paths (`/Users/…`, `/home/…`, an assumed `$HOME`)
       in files, docs or scripts; paths are repo- or skill-relative.
 - [ ] `SKILL.md` frontmatter is valid YAML: `name` equals the directory name, and

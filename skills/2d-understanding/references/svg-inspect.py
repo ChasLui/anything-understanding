@@ -62,12 +62,15 @@ def _strip_ns(tree: ET.ElementTree) -> ET.ElementTree:
     return tree
 
 
+MAX_SVG_BYTES = 20_000_000
+
+
 def inspect(path: Path, render: bool = True) -> dict:
     issues: list[str] = []
-    raw = path.read_text(encoding="utf-8", errors="replace")
+    size = path.stat().st_size
     report: dict = {
         "file": str(path.resolve()),
-        "bytes": len(path.read_bytes()),
+        "bytes": size,
         "viewBox": None,
         "width": None,
         "height": None,
@@ -80,6 +83,10 @@ def inspect(path: Path, render: bool = True) -> dict:
         "render": None,
         "issues": issues,
     }
+    if size > MAX_SVG_BYTES:
+        issues.append(f"SVG is {size} bytes: over the {MAX_SVG_BYTES}-byte inspection limit")
+        return report
+    raw = path.read_text(encoding="utf-8", errors="replace")
 
     try:
         _strip_ns(ET.parse(path))
@@ -135,8 +142,22 @@ def inspect(path: Path, render: bool = True) -> dict:
             else:
                 report["external_refs"].append({"tag": tag, "href": href})
 
-    report["counts"] = dict(sorted(counts.items(), key=lambda kv: -kv[1]))
+    # CSS can pull resources without an href attribute; treat those as external
+    # refs too so the render guard below covers them.
+    seen = {(ref["tag"], ref["href"]) for ref in report["external_refs"]}
+    for href in re.findall(r"url\(\s*['\"]?([^'\")\s]+)", raw):
+        if href.startswith(("#", "data:")) or ("css", href) in seen:
+            continue
+        report["external_refs"].append({"tag": "css", "href": href})
+        seen.add(("css", href))
+    for href in re.findall(r"@import\s+(?:url\()?\s*['\"]([^'\"]+)", raw):
+        if href.startswith(("#", "data:")) or ("import", href) in seen:
+            continue
+        report["external_refs"].append({"tag": "import", "href": href})
+        seen.add(("import", href))
+
     report["path_segments"] = segments
+    report["counts"] = dict(sorted(counts.items(), key=lambda kv: -kv[1]))
     report["fonts"] = sorted(fonts)
     if texts:
         joined = " | ".join(t for t in texts if t)
@@ -153,7 +174,14 @@ def inspect(path: Path, render: bool = True) -> dict:
     if counts.get("use") and not counts.get("symbol") and not counts.get("g"):
         issues.append("<use> present but no <symbol>/<g> target seen")
 
-    if render and shutil.which("rsvg-convert"):
+    # An external href can make librsvg read local files (tested: an <image>
+    # href pointing at a local PNG is embedded in the rendered bitmap). Report
+    # the refs, but never render a document that has them.
+    if render and report["external_refs"]:
+        issues.append(
+            f"render skipped: {len(report['external_refs'])} external ref(s) would read local or network resources"
+        )
+    elif render and shutil.which("rsvg-convert"):
         report["render"] = _render(path, issues)
     elif render:
         issues.append("rsvg-convert missing: renderability unverified")

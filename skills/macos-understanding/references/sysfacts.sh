@@ -270,7 +270,7 @@ if json_flag:
 def human_bytes(n):
     if n is None:
         return "?"
-    # 3 significant digits, like `df -h`: 808 GiB, 1.8 TiB, 64 GiB.
+    # 3 significant digits, like `df -h`.
     for unit, scale in (("TiB", 2**40), ("GiB", 2**30), ("MiB", 2**20), ("KiB", 2**10)):
         if n >= scale:
             value = n / scale

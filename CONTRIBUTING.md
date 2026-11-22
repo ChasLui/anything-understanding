@@ -135,12 +135,20 @@ staged files. `.githooks/commit-msg` rejects non-Conventional-Commit subjects
 (merge and `fixup!`/`squash!` messages pass). To bypass once for a
 work-in-progress commit, use `git commit --no-verify` and say why in the PR.
 
+Only enable hooks in checkouts you trust: `.githooks/*` comes from the
+checked-out branch, so a branch can change the code that runs on your next
+commit. Review `.githooks/` and `scripts/` before committing in a new branch.
+
 ## Pull requests
 
 - **Small PRs.** One skill per change; unrelated cleanup goes in its own PR.
 - **Evidence in the description.** Paste the commands you ran and their real
   output — the self-test for the touched skill, plus `bash verify.sh`. Numbers,
   not adjectives.
+- **Redact evidence.** Replace `/Users/<you>/…` paths, private CSV headers,
+  OCR text and transcripts with `<artifact>` / `<redacted>` before pasting into
+  a public issue or PR; the tool output is local measurement, not publishable
+  content. The issue and PR templates repeat this rule.
 - **No docs drift.** If a command changed, the doc line changed in the same PR.
 - **Portability.** No machine-specific absolute paths in committed files; skills
   and their self-tests must run from the repo root.

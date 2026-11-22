@@ -9,6 +9,8 @@ body:
         Paste real output, not a summary of it. If the skill answered with a
         number that is wrong for the artifact, that is the bug — say which
         number and what you measured with another tool.
+        Before pasting, redact absolute paths (`/Users/<you>/…`), CSV headers,
+        OCR text and transcripts; replace them with `<artifact>` / `<redacted>`.
   - type: dropdown
     id: skill
     attributes:

@@ -26,6 +26,10 @@ from pathlib import Path
 
 TEXT_SUFFIXES = {".md", ".markdown", ".txt", ".rst", ".csv", ".log"}
 PANDOC_SUFFIXES = {".html", ".htm", ".rtf", ".docx", ".odt", ".epub", ".doc"}
+# openpyxl sizes its iteration rectangle from the furthest cell; one cell at
+# XFD1048576 would otherwise allocate 17e9 Cell objects from a 5 KB file.
+XLSX_MAX_ROWS = 50_000
+XLSX_MAX_COLS = 128
 
 
 def parse_pages(spec: str | None, total: int) -> list[int]:
@@ -139,32 +143,42 @@ def pptx_text(path: Path) -> str:
     return "\n".join(chunks)
 
 
+def xlsx_rows(ws, values_only: bool = True):
+    """Yield at most XLSX_MAX_ROWS rows; callers slice columns."""
+    for index, row in enumerate(ws.iter_rows(values_only=values_only)):
+        if index >= XLSX_MAX_ROWS:
+            break
+        yield row
+
+
 def xlsx_tables(path: Path, outdir: Path) -> str:
     import openpyxl
 
     outdir.mkdir(parents=True, exist_ok=True)
-    wb = openpyxl.load_workbook(str(path), data_only=True)
+    wb = openpyxl.load_workbook(str(path), data_only=True, read_only=True)
     lines: list[str] = []
     for ws in wb.worksheets:
         csv_path = outdir / f"{ws.title}.csv"
         with csv_path.open("w", newline="") as fh:
             writer = csv.writer(fh)
-            for row in ws.iter_rows(values_only=True):
-                writer.writerow(["" if v is None else v for v in row])
-        lines.append(f"--- sheet {ws.title} ({ws.max_row}x{ws.max_column}) -> {csv_path}")
+            for row in xlsx_rows(ws):
+                writer.writerow(["" if v is None else v for v in row[:XLSX_MAX_COLS]])
+        suffix = " (truncated)" if ws.max_row > XLSX_MAX_ROWS or ws.max_column > XLSX_MAX_COLS else ""
+        lines.append(f"--- sheet {ws.title} ({ws.max_row}x{ws.max_column}){suffix} -> {csv_path}")
     return "\n".join(lines)
 
 
 def xlsx_text(path: Path) -> str:
     import openpyxl
 
-    wb = openpyxl.load_workbook(str(path), data_only=True)
+    wb = openpyxl.load_workbook(str(path), data_only=True, read_only=True)
     chunks: list[str] = []
     for ws in wb.worksheets:
-        chunks.append(f"--- sheet {ws.title} ({ws.max_row}x{ws.max_column}) ---")
-        for row in ws.iter_rows(values_only=True):
+        suffix = " (truncated)" if ws.max_row > XLSX_MAX_ROWS or ws.max_column > XLSX_MAX_COLS else ""
+        chunks.append(f"--- sheet {ws.title} ({ws.max_row}x{ws.max_column}){suffix} ---")
+        for row in xlsx_rows(ws):
             if any(v is not None for v in row):
-                chunks.append("\t".join("" if v is None else str(v) for v in row))
+                chunks.append("\t".join("" if v is None else str(v) for v in row[:XLSX_MAX_COLS]))
     return "\n".join(chunks)
 
 
@@ -234,10 +248,10 @@ def main(argv: list[str]) -> int:
         import openpyxl
         from openpyxl.worksheet.formula import ArrayFormula
 
-        wb = openpyxl.load_workbook(str(path), data_only=False)
+        wb = openpyxl.load_workbook(str(path), data_only=False, read_only=True)
         for ws in wb.worksheets:
-            for row in ws.iter_rows():
-                for cell in row:
+            for row in xlsx_rows(ws, values_only=False):
+                for cell in row[:XLSX_MAX_COLS]:
                     value = cell.value
                     if isinstance(value, ArrayFormula):
                         print(f"{ws.title}!{value.ref}\t{value.text}")

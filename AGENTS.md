@@ -39,6 +39,12 @@ failure modes, and a self-test that fails when the tooling drifts.
 6. Every tool script needs a `references/selftest.sh` assertion that fails when the
    measurement breaks — fixture generation + measured-value checks, not exit codes.
 7. Bodies are Chinese with English technical terms; code and comments are English.
+8. **Redact before publishing.** Tool output carries absolute paths, CSV headers,
+   OCR text and transcripts; replace them with `<artifact>` / `<redacted>` in
+   issues and PRs. Never paste a full `--json` dump from a private artifact.
+9. **Uploads need consent.** No script uploads anything; commands that do
+   (`ov add-resource`, `ov find --image`) must state the endpoint and get the
+   user's explicit approval first. Confidential CAD/BOM/quotes/suppliers stay local.
 
 ## Checks (run before calling anything done)
 

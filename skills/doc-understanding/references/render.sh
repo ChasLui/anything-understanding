@@ -45,7 +45,10 @@ if ! command -v python3 >/dev/null; then
   echo "render.sh needs python3 + PyMuPDF" >&2
   exit 1
 fi
-[ -n "$out" ] || out="page-${page}.png"
+if [ -z "$out" ]; then
+  outdir=$(mktemp -d "${TMPDIR:-/tmp}/doc-render.XXXXXX")
+  out="$outdir/page-${page}.png"
+fi
 python3 - "$file" "$page" "$dpi" "$out" <<'PY'
 import sys
 import fitz

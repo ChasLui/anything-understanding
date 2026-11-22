@@ -7,3 +7,5 @@ anything-understanding-ocr/
 .ruff_cache/
 .venv/
 *.egg-info/
+# Rendered scan pages (render.sh --out), possibly sensitive
+page-*.png

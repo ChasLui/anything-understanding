@@ -113,6 +113,8 @@ references/render.sh scan.pdf --page 1 --dpi 150 --out page1.png
 ../2d-understanding/references/ocr.sh page1.png --json
 ```
 
+- 不给 `--out` 时写到 `${TMPDIR:-/tmp}/doc-render.XXXXXX/page-N.png` 并打印路径，
+  **不会**落在当前目录；扫描件通常是敏感文档，别把渲染页提交进仓库。
 - 输出 `path  WxH  page N/M @ Ddpi`；尺寸 = pt/72×dpi，向上取整
   （实测 800×400 pt @150 → 1667×834）。
 - 150–200 dpi 够读正文；低于 100 dpi 小字会丢。渲染出的图如果再缩放，OCR 会更差，

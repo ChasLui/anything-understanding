@@ -185,7 +185,7 @@ if [ "$plist_ok" -eq 1 ]; then
   category=$(plist_get LSApplicationCategoryType || true)
   exe_name=$(plist_get CFBundleExecutable || true)
   case $exe_name in
-    */*)
+    */* | ..)
       add note "CFBundleExecutable is not a plain file name: $exe_name"
       exe_name=""
       ;;
@@ -249,7 +249,7 @@ if [ "$exe_exists" -eq 1 ]; then
     lipo_rc=$?
   fi
 fi
-printf '%s' "$lipo_out" >"$tmp/lipo"
+printf '%s' "$lipo_out" | tr -d '\000-\010\013-\037\177' >"$tmp/lipo"
 printf '%s' "$lipo_rc" >"$tmp/lipo.rc"
 
 sign_out=""
@@ -438,8 +438,17 @@ def parse_gatekeeper(raw, rc):
 
 
 name = one("name") or ""
-path = one("path") or ""
-resolved_path = one("resolved_path")
+home = os.path.expanduser("~")
+
+
+def display_path(value):
+    if not value:
+        return value
+    return "~" + value[len(home):] if value == home or value.startswith(home + os.sep) else value
+
+
+path = display_path(one("path") or "")
+resolved_path = display_path(one("resolved_path"))
 bundle_id = one("bundle_id")
 category = one("category")
 label = category_label(category)
@@ -448,7 +457,7 @@ size_kib = one("size_kib")
 size_kib = int(size_kib) if size_kib and size_kib.isdigit() else None
 
 exe_exists = flag("executable_exists")
-exe_path = one("executable_path")
+exe_path = display_path(one("executable_path"))
 
 lipo_raw = read("lipo").strip()
 try:

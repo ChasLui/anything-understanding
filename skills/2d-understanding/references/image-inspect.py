@@ -120,11 +120,16 @@ def _content_bbox(rgb: Image.Image, background: str, tolerance: int = 12):
 
 def inspect(path: Path, force_pixels: bool = False) -> dict:
     issues: list[str] = []
-    data = path.read_bytes()
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            digest.update(chunk)
+            size += len(chunk)
     report: dict = {
         "file": str(path.resolve()),
-        "bytes": len(data),
-        "sha256": hashlib.sha256(data).hexdigest()[:16],
+        "bytes": size,
+        "sha256": digest.hexdigest()[:16],
         "format": None,
         "size": None,
         "mode": None,
