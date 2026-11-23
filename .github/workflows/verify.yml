@@ -72,7 +72,8 @@ jobs:
     # pandas, pyarrow, charset_normalizer, Pillow). That runner is slow and the
     # heavy dependencies skip themselves when absent, so this job is opt-in.
     if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-14
+    # GitHub retired the macos-14 image in November 2026.
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
