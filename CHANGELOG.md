@@ -59,6 +59,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Markdown file in the repo.
 - CI: concurrency cancellation, job timeouts, non-persisted checkout
   credentials, and current action majors.
+- The manual macOS self-test job now runs on `macos-15` (GitHub retired
+  `macos-14`), installs ImageMagick and ast-grep so those checks execute instead
+  of skipping, and `VERIFY_VERBOSE=1` prints the full failing self-test output.
 
 ### Fixed
 
@@ -95,7 +98,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Self-tests are **macOS-first**: `sips`, `afinfo`, `swiftc` (Vision OCR),
   ffmpeg and PyMuPDF are expected, so CI runs lint only on Linux and the full
-  self-test job only on `macos-14` via `workflow_dispatch`.
+  self-test job only on `macos-15` via `workflow_dispatch`.
 - Optional heavy dependencies (FreeCAD, assimp, Godot, a whisper ggml model)
   skip their checks with a printed `SKIP` when absent.
 - Measured numbers can shift with tool versions. The self-tests, not the tables

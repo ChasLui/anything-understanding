@@ -203,8 +203,12 @@ python3 "$here/image-inspect.py" "$work/notimg.png" >/dev/null 2>&1
 rc_human=$?
 set -e
 check "unreadable image human mode survives" "$rc_human" "0"
-check "diff same_size is boolean" \
-  "$(bash "$here/image-diff.sh" "$work/ok.png" "$work/ok.png" --json | jqpy 'type(d["same_size"]).__name__')" "bool"
+if command -v magick >/dev/null; then
+  check "diff same_size is boolean" \
+    "$(bash "$here/image-diff.sh" "$work/ok.png" "$work/ok.png" --json | jqpy 'type(d["same_size"]).__name__')" "bool"
+else
+  echo "skip image-diff same_size (no ImageMagick)"
+fi
 
 [ "$fail" = 0 ] && echo "selftest passed" || {
   echo "selftest FAILED" >&2

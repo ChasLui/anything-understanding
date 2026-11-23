@@ -172,13 +172,22 @@ echo "note: sampling grid for --interval 0.5 on the 3 s fixture = $(jqpy '[f["t_
 # --- seek verification on a non-zero-start container; numeric validation ---
 ffmpeg -v error -i "$work/cuts.mp4" -c copy "$work/cuts.ts" -y 2>/dev/null || true
 if [ -s "$work/cuts.ts" ]; then
-  out=$(bash "$here/frames.sh" "$work/cuts.ts" --at 2.2 --out "$work/ts_frames" --json 2>/dev/null || true)
+  err=$work/ts.err
+  out=$(bash "$here/frames.sh" "$work/cuts.ts" --at 2.2 --out "$work/ts_frames" --json 2>"$err" || true)
+  if [ -z "$out" ]; then
+    echo "TS seek produced no JSON; frames.sh stderr:"
+    sed 's/^/  /' "$err"
+  fi
   check "TS seek lands within a quarter second" \
     "$(jqpy 'bool(d["frames"]) and abs(d["frames"][0]["t_s"] - 2.2) <= 0.25' <<<"$out")" "True"
   set +e
-  bash "$here/frames.sh" "$work/cuts.ts" --at 0.2 --out "$work/ts_early" >/dev/null 2>&1
+  bash "$here/frames.sh" "$work/cuts.ts" --at 0.2 --out "$work/ts_early" >/dev/null 2>"$work/ts_early.err"
   rc_early=$?
   set -e
+  if [ "$rc_early" != 3 ]; then
+    echo "early TS seek rc=$rc_early; frames.sh stderr:"
+    sed 's/^/  /' "$work/ts_early.err"
+  fi
   check "TS seek before first frame reports no frame" "$rc_early" "3"
 fi
 set +e

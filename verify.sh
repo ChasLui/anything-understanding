@@ -83,7 +83,11 @@ else
       mark "$name" PASS
     else
       mark "$name" FAIL
-      printf '%s\n' "$out" | grep -E '^FAIL|selftest FAILED' | sed 's/^/    /'
+      if [ "${VERIFY_VERBOSE:-0}" = 1 ]; then
+        printf '%s\n' "$out" | tail -120 | sed 's/^/    /'
+      else
+        printf '%s\n' "$out" | grep -E '^FAIL|selftest FAILED' | sed 's/^/    /'
+      fi
       fail=1
     fi
   done

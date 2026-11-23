@@ -5,6 +5,8 @@ here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d "${TMPDIR:-/tmp}/code-selftest.XXXXXX")
 trap 'rm -r "$work"' EXIT
 fail=0
+has_ast=0
+if command -v ast-grep >/dev/null 2>&1; then has_ast=1; fi
 
 check() { # check <label> <actual> <expected>
   if [ "$2" = "$3" ]; then
@@ -61,7 +63,7 @@ check "non-git has no git field" "$(jqpy 'd["git"]' <<<"$out")" "None"
 check "non-git still counts files" "$(jqpy 'd["files"] > 0' <<<"$out")" "True"
 
 # --- symbols ---
-if command -v ast-grep >/dev/null; then
+if [ "$has_ast" = 1 ]; then
   out=$(bash "$here/symbols.sh" src --json)
   check "python defs" "$(jqpy 'd["by_kind"]["function_definition"]' <<<"$out")" "2"
   check "python class" "$(jqpy 'd["by_kind"]["class_definition"]' <<<"$out")" "1"
@@ -92,12 +94,14 @@ mkdir -p "$work/churn"
 out=$(bash "$here/repo-map.sh" "$work/churn" --json)
 check "churn keeps spaces" "$(jqpy 'd["churn"][0]["file"]' <<<"$out")" "a b.py"
 
-mkdir -p "$work/mixed"
-printf 'def f():\n    pass\n' >"$work/mixed/x.py"
-printf 'def g\nend\n' >"$work/mixed/x.rb"
-out=$(bash "$here/symbols.sh" "$work/mixed" --lang python --json)
-check "other languages listed as skipped" \
-  "$(jqpy 'any(p.endswith("x.rb") for p in d["skipped_files"])' <<<"$out")" "True"
+if [ "$has_ast" = 1 ]; then
+  mkdir -p "$work/mixed"
+  printf 'def f():\n    pass\n' >"$work/mixed/x.py"
+  printf 'def g\nend\n' >"$work/mixed/x.rb"
+  out=$(bash "$here/symbols.sh" "$work/mixed" --lang python --json)
+  check "other languages listed as skipped" \
+    "$(jqpy 'any(p.endswith("x.rb") for p in d["skipped_files"])' <<<"$out")" "True"
+fi
 
 # --- git quotepath and invalid UTF-8 (review regressions) ---
 mkdir -p "$work/cjk"
@@ -113,26 +117,31 @@ mkdir -p "$work/cjk"
 out=$(bash "$here/repo-map.sh" "$work/cjk" --json)
 check "non-ASCII filename kept" "$(jqpy 'd["churn"][0]["file"]' <<<"$out")" "中文文件.py"
 
-mkdir -p "$work/badutf8"
-printf '# caf\xe9\ndef b(): pass\n' >"$work/badutf8/bad.py"
-out=$(bash "$here/symbols.sh" "$work/badutf8" --json)
-check "invalid UTF-8 listed as skipped" \
-  "$(jqpy 'any(p.endswith("bad.py") for p in d["skipped_files"])' <<<"$out")" "True"
+if [ "$has_ast" = 1 ]; then
+  mkdir -p "$work/badutf8"
+  printf '# caf\xe9\ndef b(): pass\n' >"$work/badutf8/bad.py"
+  out=$(bash "$here/symbols.sh" "$work/badutf8" --json)
+  check "invalid UTF-8 listed as skipped" \
+    "$(jqpy 'any(p.endswith("bad.py") for p in d["skipped_files"])' <<<"$out")" "True"
+fi
 
-# --- hostile filename: ESC/tab must not reach the terminal or break TSV ---
-mkdir -p "$work/hostile"
-python3 - "$work/hostile" <<'PY'
+if [ "$has_ast" = 1 ]; then
+  mkdir -p "$work/hostile"
+  python3 - "$work/hostile" <<'PY'
 import os, sys
 
 name = "evil\x1b[31mred\x1b[0m\tname.py"
 with open(os.path.join(sys.argv[1], name), "w", encoding="utf-8") as fh:
     fh.write("def f():\n    pass\n")
 PY
-out=$(bash "$here/symbols.sh" "$work/hostile" 2>/dev/null)
-check "control chars replaced in output" \
-  "$(printf '%s' "$out" | LC_ALL=C grep -c $'\033' || true)" "0"
-check "hostile filename keeps 4 TSV columns" \
-  "$(printf '%s\n' "$out" | awk -F'\t' 'NR==1{print NF}')" "4"
+  out=$(bash "$here/symbols.sh" "$work/hostile" 2>/dev/null)
+  check "control chars replaced in output" \
+    "$(printf '%s' "$out" | LC_ALL=C grep -c $'\033' || true)" "0"
+  check "hostile filename keeps 4 TSV columns" \
+    "$(printf '%s\n' "$out" | awk -F'\t' 'NR==1{print NF}')" "4"
+else
+  echo "skip symbols regressions (ast-grep not installed)"
+fi
 
 # repo-map human output must not replay control bytes from the filesystem fallback.
 mkdir -p "$work/plainesc"

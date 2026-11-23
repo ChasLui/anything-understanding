@@ -196,8 +196,8 @@ out=$(bash "$here/apps.sh" --json)
 check "apps json length matches count" "$(jqpy 'len(d)' <<<"$out")" "$count"
 check "safari in inventory" \
   "$(jqpy 'any(a.get("bundle_id") == "com.apple.Safari" for a in d)' <<<"$out")" "True"
-out=$(bash "$here/apps.sh" --filter summer --json)
-check "filter matches summer" "$(jqpy 'len(d) >= 1' <<<"$out")" "True"
+out=$(bash "$here/apps.sh" --filter safari --json)
+check "filter matches safari" "$(jqpy 'len(d) >= 1' <<<"$out")" "True"
 
 # --- GUI session only ------------------------------------------------------
 dock=/System/Library/CoreServices/Dock.app

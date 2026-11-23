@@ -43,6 +43,8 @@ if [ -z "$cmd" ]; then
   cmd=$(command -v FreeCADCmd 2>/dev/null || true)
 fi
 
+py=""
+run=()
 if [ -n "$cmd" ] && [ -x "$cmd" ]; then
   py=""
   run=("$cmd")
