@@ -125,9 +125,10 @@ if [ -n "$tile_n" ]; then
   [ "$cols" -gt 0 ] || die "--cols must be > 0"
 fi
 
-duration=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 -- "$probe_path" 2>/dev/null || true)
+# ffprobe may print one line per matching stream; take the first non-empty line.
+duration=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 -- "$probe_path" 2>/dev/null | awk 'NF {print $1; exit}' || true)
 case "$duration" in '' | *[!0-9.]*) duration="" ;; esac
-fps=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nw=1:nk=1 -- "$probe_path" 2>/dev/null || true)
+fps=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nw=1:nk=1 -- "$probe_path" 2>/dev/null | awk 'NF {print $1; exit}' || true)
 seek_tolerance=$(awk -v f="$fps" 'BEGIN { split(f, a, "/"); r = (a[2] ? a[1] / a[2] : a[1]); t = (r > 0 ? 1.05 / r : 0.25); if (t < 0.25) t = 0.25; if (t > 1.0) t = 1.0; printf "%.3f", t }')
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/frames.XXXXXX")

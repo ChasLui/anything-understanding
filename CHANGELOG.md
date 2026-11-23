@@ -75,6 +75,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `3d-understanding` STEP views no longer fail with `NameError`: FreeCAD 1.1.4's
   `TechDraw` import evicts `json` and `math` from the importer's globals, so the
   script imports them inside the functions that use them.
+- `video-understanding` frame extraction tolerates `ffprobe` returning multiple
+  `r_frame_rate` or duration lines (seen on a macOS 15 MPEG-TS fixture); the
+  embedded newline previously killed `awk` and broke `--at` seeks.
 
 ### Security
 
