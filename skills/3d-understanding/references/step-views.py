@@ -19,14 +19,15 @@ Outputs:
 only volumes are reported: never invent a mass.
 """
 
-import json
-import math
 import os
 import sys
 from xml.sax.saxutils import escape
 
 import FreeCAD
 import TechDraw
+
+# TechDraw's import evicts `json` and `math` from this module's globals
+# (FreeCAD 1.1.4); import them inside the functions that use them.
 
 ORTHO = [
     ("front", (0, -1, 0)),
@@ -207,6 +208,8 @@ def collect(shapes, direction, with_hidden):
 
 
 def sheet(shapes, with_hidden, outdir, title):
+    import math
+
     views = ORTHO + ISO
     cols = 5
     cell_w, cell_h = 400, 300
@@ -245,6 +248,8 @@ def sheet(shapes, with_hidden, outdir, title):
 
 
 def main():
+    import json
+
     step_path, outdir, density, with_hidden = parse_args(sys.argv)
     if not os.path.isfile(step_path):
         raise SystemExit("no such file: %s" % step_path)

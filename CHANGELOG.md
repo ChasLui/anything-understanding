@@ -72,6 +72,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   inventory parsing tolerates malformed records, and enumeration is NUL-safe.
   Self-tests now cover hostile bundles, symlinks, quarantine, broken bundles and
   exit codes.
+- `3d-understanding` STEP views no longer fail with `NameError`: FreeCAD 1.1.4's
+  `TechDraw` import evicts `json` and `math` from the importer's globals, so the
+  script imports them inside the functions that use them.
 
 ### Security
 
